@@ -1,5 +1,5 @@
 /*
-  Sleek Portfolio Styles
+  Sleek Portfolio Styles (UPDATED)
   - Black canvas, generous whitespace, cinematic motion
   - Accent color: #ff0048
   - Headline font: "Premiere One" (if available) then Space Grotesk
@@ -236,24 +236,37 @@ main, header, footer { position: relative; z-index: 1; }
 }
 .modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(6px); }
 .modal-panel {
-  position: relative; width: min(1080px, calc(100% - 48px)); max-height: calc(100% - 48px);
-  border-radius: 24px; overflow: clip; background: linear-gradient(180deg, #0b0b0d, #0a0a0a);
+  position: relative; width: min(1080px, calc(100% - 24px)); max-height: calc(100% - 24px);
+  border-radius: 24px; overflow: hidden; /* keep panel chrome, let body scroll */
+  background: linear-gradient(180deg, #0b0b0d, #0a0a0a);
   box-shadow: 0 10px 60px rgba(0,0,0,.55), var(--glow);
   display: grid; grid-template-rows: auto 1fr auto;
 }
+/* Make the content area scroll independently so the header/footer + close stay fixed */
+.modal-body { padding: 22px 26px 6px; display: grid; grid-template-columns: 1.1fr 2fr; gap: 24px; overflow: auto; }
+@media (max-width: 880px) { .modal-body { grid-template-columns: 1fr; } }
+
 .modal-close {
-  position: absolute; top: 14px; right: 14px; width: 38px; height: 38px;
-  border-radius: 999px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.02);
+  position: absolute; top: 14px; right: 14px; width: 42px; height: 42px;
+  border-radius: 999px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06);
   color: #fff; font-size: 20px; cursor: pointer;
+  z-index: 5; /* ensure above any carousel media */
+  pointer-events: auto;
 }
+.modal-close:hover { box-shadow: var(--glow); }
+
 .modal-header { padding: 26px 26px 0; }
 .modal-title { font-family: 'Premiere One', 'Space Grotesk', Inter, sans-serif; text-transform: uppercase; letter-spacing: -.02em; font-size: clamp(22px, 2.6vw, 32px); margin: 0; }
 .modal-sub { color: var(--muted); margin: 8px 0 0; }
 
-.modal-body { padding: 22px 26px 6px; display: grid; grid-template-columns: 1.1fr 2fr; gap: 24px; }
-@media (max-width: 880px) { .modal-body { grid-template-columns: 1fr; } }
+/* Tweak padding on very small screens */
+@media (max-width: 560px) {
+  .modal-header { padding: 18px 16px 0; }
+  .modal-body { padding: 14px 16px 6px; gap: 16px; }
+  .modal-footer { padding: 12px 14px 16px; }
+}
 
-.modal-overview { /* Slightly wider per request (wider feel via larger type and spacing) */ }
+.modal-overview { }
 .eyebrow { font-family: 'Premiere One', 'Space Grotesk', Inter, sans-serif; text-transform: uppercase; letter-spacing: .18em; color: var(--muted); font-size: 11px; margin: 0 0 8px; }
 .overview-text { color: #e8e8ec; font-size: 16px; line-height: 1.75; }
 .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
@@ -263,7 +276,13 @@ main, header, footer { position: relative; z-index: 1; }
 /* Carousel */
 .carousel { position: relative; border-radius: var(--radius-xl); overflow: hidden; background: #0d0d10; border: 1px solid rgba(255,255,255,.06); }
 .car-track { display: flex; width: 100%; transition: transform .45s cubic-bezier(.22,.61,.36,1); }
-.car-slide { min-width: 100%; aspect-ratio: 16/10; position: relative; }
+.car-slide {
+  min-width: 100%;
+  /* Better mobile fit: cap height in viewport while keeping aspect */
+  aspect-ratio: 16/10;
+  max-height: 60vh;
+  position: relative;
+}
 /* Images & videos in slides behave identically */
 .car-slide img,
 .car-slide video {
@@ -317,3 +336,13 @@ main, header, footer { position: relative; z-index: 1; }
 
 /* Focus rings */
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+
+/* --- Mobile polish --- */
+@media (max-width: 720px) {
+  .hero { margin: 12vh auto 6vh; }
+  .section-head { margin: 10vh auto 5vh; }
+  .cta-row { flex-wrap: wrap; }
+  .card { padding: 18px; }
+  .projects-grid { gap: 20px; padding: 0 16px; }
+  .site-header { padding: 0 16px; }
+}

@@ -1,10 +1,11 @@
 /*
-  Sleek Portfolio — Interactions & Data
+  Sleek Portfolio — Interactions & Data (UPDATED)
   - Minimal particles
   - Scroll reveals
   - Project grid generation
   - Modal with full-width carousel (images + videos)
   - Lightbox w/ keyboard navigation (images + videos)
+  - Fixes: reliable close button + improved mobile behavior
 */
 
 const $ = (q, s = document) => s.querySelector(q);
@@ -102,7 +103,6 @@ const state = {
       demo: '#',
       repo: '#',
       gallery: [
-
         { src: 'RW1.mp4', alt: 'Cinematic prototype demo', type: 'video' }
       ],
     }
@@ -110,11 +110,13 @@ const state = {
   ],
   currentIdx: 0,
   currentProject: null,
-  lightboxIndex: 0
+  lightboxIndex: 0,
+  scrollY: 0
 };
 
 /* Year in footer */
-$('#year').textContent = new Date().getFullYear();
+const yearEl = $('#year');
+if (yearEl) yearEl.textContent = new Date().getFullYear();
 
 /* Particle background — subtle */
 (function particles() {
@@ -182,30 +184,32 @@ const io = new IntersectionObserver(
 
 /* Build projects grid */
 const grid = $('#projectsGrid');
-state.projects.forEach((p, idx) => {
-  const article = document.createElement('article');
-  article.className = 'card reveal';
-  article.setAttribute('role', 'listitem');
+if (grid) {
+  state.projects.forEach((p, idx) => {
+    const article = document.createElement('article');
+    article.className = 'card reveal';
+    article.setAttribute('role', 'listitem');
 
-  article.innerHTML = `
-    <div class="card-head">
-      <div class="card-logo" aria-hidden="true">
-        <img src="${p.logo}" alt="${p.title} logo"/>
+    article.innerHTML = `
+      <div class="card-head">
+        <div class="card-logo" aria-hidden="true">
+          <img src="${p.logo}" alt="${p.title} logo"/>
+        </div>
+        <div>
+          <h3 class="card-title">${p.title}</h3>
+          <p class="card-sub">${p.short}</p>
+        </div>
       </div>
-      <div>
-        <h3 class="card-title">${p.title}</h3>
-        <p class="card-sub">${p.short}</p>
+      <div class="card-body">${p.overview}</div>
+      <div class="card-actions">
+        <a href="#" class="btn ghost" data-open="${idx}">See details</a>
       </div>
-    </div>
-    <div class="card-body">${p.overview}</div>
-    <div class="card-actions">
-      <a href="#" class="btn ghost" data-open="${idx}">See details</a>
-    </div>
-  `;
+    `;
 
-  grid.appendChild(article);
-  io.observe(article);
-});
+    grid.appendChild(article);
+    io.observe(article);
+  });
+}
 
 /* Modal logic */
 const modal = $('#projectModal');
@@ -216,6 +220,23 @@ function isVideoItem(g) {
   if (!g || !g.src) return false;
   if (g.type && g.type.toLowerCase() === 'video') return true;
   return /\.(mp4|webm|ogg)(\?|#|$)/i.test(g.src);
+}
+
+function lockBodyScroll() {
+  state.scrollY = window.scrollY || window.pageYOffset || 0;
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${state.scrollY}px`;
+  document.body.style.left = '0';
+  document.body.style.right = '0';
+  document.body.style.width = '100%';
+}
+function unlockBodyScroll() {
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.left = '';
+  document.body.style.right = '';
+  document.body.style.width = '';
+  window.scrollTo(0, state.scrollY || 0);
 }
 
 function openModal(idx) {
@@ -256,7 +277,7 @@ function openModal(idx) {
       v.setAttribute('loop', '');        // gentle motion if user plays
       v.src = g.src;
       v.title = g.alt || (p.title + ' video');
-      // We open the lightbox on click of the SLIDE to avoid fighting controls
+      // open the lightbox on click of the SLIDE to avoid fighting controls
       slide.addEventListener('click', () => openLightbox(i));
       slide.appendChild(v);
     } else {
@@ -274,24 +295,25 @@ function openModal(idx) {
   updateCarousel();
 
   modal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
+  lockBodyScroll();
 }
 
 function closeModal() {
   modal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
+  unlockBodyScroll();
 }
 
 function updateCarousel() {
-  const width = $('.carousel').clientWidth;
+  const container = $('.carousel');
+  if (!container) return;
+  const width = container.clientWidth;
   carTrack.style.transform = `translateX(-${width * slideIdx}px)`;
 }
 
-$('[data-prev]').addEventListener('click', () => {
-  slideIdx = Math.max(0, slideIdx - 1);
-  updateCarousel();
-});
-$('[data-next]').addEventListener('click', () => {
+const prevBtn = $('[data-prev]');
+const nextBtn = $('[data-next]');
+if (prevBtn) prevBtn.addEventListener('click', () => { slideIdx = Math.max(0, slideIdx - 1); updateCarousel(); });
+if (nextBtn) nextBtn.addEventListener('click', () => {
   const max = state.currentProject ? state.currentProject.gallery.length - 1 : 0;
   slideIdx = Math.min(max, slideIdx + 1);
   updateCarousel();
@@ -299,24 +321,36 @@ $('[data-next]').addEventListener('click', () => {
 
 window.addEventListener('resize', () => {
   if (modal.getAttribute('aria-hidden') === 'false') updateCarousel();
-});
+}, { passive: true });
 
-$$('[data-close]').forEach(b => b.addEventListener('click', closeModal));
+// robust: delegate any [data-close] click to close modal (button OR backdrop)
+// covers dynamic DOM, z-index oddities, and bubbling from inner icons
+if (modal) {
+  modal.addEventListener('click', (e) => {
+    const closeEl = e.target.closest('[data-close]');
+    if (closeEl) {
+      e.preventDefault();
+      closeModal();
+    }
+  });
+}
 
-// delegate open
-grid.addEventListener('click', e => {
-  const btn = e.target.closest('[data-open]');
-  if (!btn) return;
-  e.preventDefault();
-  openModal(parseInt(btn.getAttribute('data-open'), 10));
-});
+// delegate open from projects grid
+if (grid) {
+  grid.addEventListener('click', e => {
+    const btn = e.target.closest('[data-open]');
+    if (!btn) return;
+    e.preventDefault();
+    openModal(parseInt(btn.getAttribute('data-open'), 10));
+  });
+}
 
 // keyboard for modal
 window.addEventListener('keydown', e => {
   if (modal.getAttribute('aria-hidden') === 'true') return;
   if (e.key === 'Escape') closeModal();
-  if (e.key === 'ArrowLeft') $('[data-prev]').click();
-  if (e.key === 'ArrowRight') $('[data-next]').click();
+  if (e.key === 'ArrowLeft') prevBtn && prevBtn.click();
+  if (e.key === 'ArrowRight') nextBtn && nextBtn.click();
 });
 
 /* Lightbox */
@@ -367,17 +401,13 @@ function closeLightbox() {
   lightbox.setAttribute('aria-hidden', 'true');
   // Pause & clear video when closing
   lightboxVideo.pause();
-  // keep src so browser can cache; optional to clear:
-  // lightboxVideo.removeAttribute('src');
 }
 
 $$('[data-lightbox-close]').forEach(el => el.addEventListener('click', closeLightbox));
-$('[data-lightbox-prev]').addEventListener('click', () => {
-  shiftLightbox(-1);
-});
-$('[data-lightbox-next]').addEventListener('click', () => {
-  shiftLightbox(1);
-});
+const lbPrev = $('[data-lightbox-prev]');
+const lbNext = $('[data-lightbox-next]');
+if (lbPrev) lbPrev.addEventListener('click', () => shiftLightbox(-1));
+if (lbNext) lbNext.addEventListener('click', () => shiftLightbox(1));
 
 function shiftLightbox(delta) {
   const len = state.currentProject.gallery.length;
@@ -402,8 +432,10 @@ window.addEventListener('keydown', e => {
 });
 
 /* Accessibility: clicking backdrops close */
-$('.modal-backdrop').addEventListener('click', closeModal);
-$('.lightbox-backdrop').addEventListener('click', closeLightbox);
+const modalBackdrop = $('.modal-backdrop');
+if (modalBackdrop) modalBackdrop.addEventListener('click', closeModal);
+const lightboxBackdrop = $('.lightbox-backdrop');
+if (lightboxBackdrop) lightboxBackdrop.addEventListener('click', closeLightbox);
 
 /* Progressive enhancement: add reveal class to hero & section headers */
 $$('.hero, .section-head').forEach(el => {
