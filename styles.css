@@ -178,6 +178,32 @@ main, header, footer { position: relative; z-index: 1; }
 }
 .section-kicker { color: var(--text); opacity: .8; max-width: 60ch; margin-top: 8px; }
 
+/* EDUCATION (NEW) */
+.education { max-width: var(--max-w); margin: 0 auto 14vh; padding: 0 24px; }
+.edu-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 28px;
+}
+.edu-grid > .edu-card { grid-column: span 4; min-width: 0; }
+@media (max-width: 1100px) { .edu-grid > .edu-card { grid-column: span 6; } }
+@media (max-width: 700px)  { .edu-grid { grid-template-columns: repeat(6, 1fr); } .edu-grid > .edu-card { grid-column: span 6; } }
+
+/* Icon polish inside the shared "card-logo" */
+.card-logo .edu-icon { display:block; margin:auto; opacity:.92; }
+
+/* Badges */
+.edu-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+  border: 1px dashed rgba(255,255,255,.18);
+  border-radius: 999px;
+  font-size: 12px;
+  color: #fff;
+  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+}
+
 /* Projects Grid */
 .projects-grid {
   --col: minmax(280px, 1fr);
